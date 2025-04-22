@@ -16,6 +16,7 @@ import java.time.Instant;
 @Entity
 @Table(name = "notifications")
 public class Notification {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
@@ -23,9 +24,15 @@ public class Notification {
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @OnDelete(action = OnDeleteAction.CASCADE)
     @JoinColumn(name = "user_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private User user;
+
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "notification_type_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    private NotificationType notificationType;
 
     @Size(max = 1000)
     @NotNull
@@ -40,5 +47,4 @@ public class Notification {
     @NotNull
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
-
 }
