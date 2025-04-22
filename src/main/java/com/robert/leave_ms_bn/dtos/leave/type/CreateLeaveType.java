@@ -1,4 +1,4 @@
-package com.robert.leave_ms_bn.dtos.leave;
+package com.robert.leave_ms_bn.dtos.leave.type;
 
 
 import lombok.AllArgsConstructor;
@@ -8,7 +8,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Getter
 @Setter
-public class RequestLeaveType {
+public class CreateLeaveType {
     private String name;
     private String description;
     private int max_days_per_year;

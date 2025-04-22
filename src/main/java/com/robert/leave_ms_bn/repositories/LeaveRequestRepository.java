@@ -1,4 +1,7 @@
 package com.robert.leave_ms_bn.repositories;
 
-public interface LeaveRequestRepository extends org.springframework.data.jpa.repository.JpaRepository<com.robert.leave_ms_bn.entities.LeaveRequest, java.lang.Long> {
-  }
+import com.robert.leave_ms_bn.entities.LeaveRequest;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface LeaveRequestRepository extends JpaRepository<LeaveRequest, Long> {
+}

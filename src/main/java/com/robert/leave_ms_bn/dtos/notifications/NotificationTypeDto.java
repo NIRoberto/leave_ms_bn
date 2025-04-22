@@ -13,7 +13,7 @@ import java.time.Instant;
 @NoArgsConstructor
 @Getter
 @Setter
-public class NotificationType {
+public class NotificationTypeDto {
     private Long id;
     private String name;
     private String label;

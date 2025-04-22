@@ -1,4 +1,4 @@
-package com.robert.leave_ms_bn.controllers;
+package com.robert.leave_ms_bn.config;
 
 
 import org.springframework.http.ResponseEntity;
