@@ -1,4 +1,4 @@
-package com.robert.leave_ms_bn.dtos.leave;
+package com.robert.leave_ms_bn.dtos.leave.status;
 
 
 import lombok.AllArgsConstructor;

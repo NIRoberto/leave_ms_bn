@@ -5,7 +5,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
 
@@ -14,50 +15,53 @@ import java.time.Instant;
 @Entity
 @Table(name = "users")
 public class User {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", nullable = false)
     private Long id;
 
     @Size(max = 255)
-    @NotNull
-    @Column(name = "firstName", nullable = false)
-    private String firstName;
+    @Column(name = "first_name", nullable = false)
+    private String first_name;
 
     @Size(max = 255)
-    @NotNull
-    @Column(name = "lastName", nullable = false)
-    private String lastName;
+    @Column(name = "last_name", nullable = false)
+    private String last_name;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @ColumnDefault("1")
     @JoinColumn(name = "role_id")
     private Role role;
 
-    @ColumnDefault("CURRENT_TIMESTAMP")
-    @Column(name = "createdAt")
-    private Instant createdAt;
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private Instant created_at;
 
-    @ColumnDefault("CURRENT_TIMESTAMP")
-    @Column(name = "updatedAt")
-    private Instant updatedAt;
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private Instant updated_at;
 
     @Size(max = 50)
     @Column(name = "gender", length = 50)
     private String gender;
 
     @Lob
-    @Column(name = "profilePictureUrl")
-    private String profilePictureUrl;
+    @Column(name = "profile_picture_url")
+    private String profile_picture_url;
 
     @Size(max = 255)
-    @NotNull
+    @NotNull(message = "Phone number is required")
     @Column(name = "phone", nullable = false)
     private String phone;
 
     @Size(max = 255)
-    @NotNull
+    @NotNull(message = "Email is required")
     @Column(name = "email", nullable = false)
     private String email;
+
+    @Size(max = 255)
+    @NotNull(message = "Password is required")
+    @Column(name = "password", nullable = false)
+    private String password;
+
 
 }
