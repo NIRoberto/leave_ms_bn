@@ -2,13 +2,15 @@ package com.robert.leave_ms_bn.mappers.leave;
 
 import com.robert.leave_ms_bn.dtos.leave.LeaveTypeDto;
 import com.robert.leave_ms_bn.entities.LeaveType;
+import org.mapstruct.Builder;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
 import java.util.List;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", builder = @Builder(disableBuilder = true))
+
 public interface LeaveTypeMapper {
 
 //    @Mapping(target = "id", source = "id")
