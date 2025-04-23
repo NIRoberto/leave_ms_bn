@@ -9,5 +9,4 @@ public class ApproveLeaveRequestDto {
     private Long requestId;
     private Long reviewerById;
     private int leaveStatusId;
-    private String comment;
 }

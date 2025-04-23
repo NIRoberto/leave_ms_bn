@@ -30,7 +30,7 @@ public class LeaveStatusController {
                 .collect(Collectors.toList());
     }
 
-    // 🔹 GET leave status by ID
+
     @GetMapping("/{id}")
     public ResponseEntity<LeaveStatusDto> getLeaveStatusById(@PathVariable int id) {
         Optional<LeaveStatus> leaveStatus = leaveStatusRepository.findById(id);
@@ -38,7 +38,7 @@ public class LeaveStatusController {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    // 🔹 POST (create) a new leave status
+
     @PostMapping
     public ResponseEntity<LeaveStatusDto> createLeaveStatus(@Valid @RequestBody LeaveStatusDto leaveStatusDto) {
         LeaveStatus status = leaveStatusMapper.CreateLeaveStatus(leaveStatusDto);
@@ -46,7 +46,7 @@ public class LeaveStatusController {
         return ResponseEntity.status(201).body(leaveStatusMapper.toDto(saved));
     }
 
-    // 🔹 PUT (update) an existing leave status
+
     @PutMapping("/{id}")
     public ResponseEntity<LeaveStatusDto> updateLeaveStatus(
             @PathVariable int  id,
