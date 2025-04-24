@@ -9,7 +9,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
-@Mapper(componentModel = "spring", builder = @Builder(disableBuilder = true))
+@Mapper(componentModel = "spring", builder = @Builder(disableBuilder = true) ,uses = {NotificationTypeMapper.class})
 
 public interface NotificationTypeMapper {
 

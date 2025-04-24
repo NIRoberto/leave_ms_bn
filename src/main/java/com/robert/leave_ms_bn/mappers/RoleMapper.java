@@ -8,7 +8,8 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 
-@Mapper(componentModel = "spring", builder = @Builder(disableBuilder = true))
+@Mapper(componentModel = "spring", builder = @Builder(disableBuilder = true), uses = {RoleMapper.class, UserMapper.class})
+
 public interface RoleMapper {
 
 //    @Mapping(target = "id", source = "id")

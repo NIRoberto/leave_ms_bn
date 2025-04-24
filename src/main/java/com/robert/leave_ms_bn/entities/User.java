@@ -1,5 +1,6 @@
 package com.robert.leave_ms_bn.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -10,6 +11,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
 
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Getter
 @Setter
 @Entity

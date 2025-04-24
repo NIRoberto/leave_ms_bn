@@ -7,7 +7,7 @@ import org.mapstruct.Builder;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-@Mapper(componentModel = "spring", builder = @Builder(disableBuilder = true), uses = RoleMapper.class)
+@Mapper(componentModel = "spring", builder = @Builder(disableBuilder = true), uses = {RoleMapper.class, UserMapper.class})
 
 public interface UserMapper {
 
@@ -16,3 +16,4 @@ public interface UserMapper {
 
     User registerUser(RegisterRequest request); // Mapping RegisterRequest to User entity
 }
+

@@ -9,7 +9,7 @@ import org.mapstruct.MappingTarget;
 
 import java.util.List;
 
-@Mapper(componentModel = "spring", builder = @Builder(disableBuilder = true))
+@Mapper(componentModel = "spring", builder = @Builder(disableBuilder = true) , uses = {LeaveTypeMapper.class})
 
 public interface LeaveTypeMapper {
 
