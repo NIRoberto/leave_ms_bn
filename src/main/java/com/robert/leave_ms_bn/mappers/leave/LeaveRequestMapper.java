@@ -12,7 +12,7 @@ import org.mapstruct.MappingTarget;
 @Mapper(componentModel = "spring", builder = @Builder(disableBuilder = true),uses ={UserMapper.class,LeaveStatusMapper.class , LeaveTypeMapper.class} )
 
 public interface LeaveRequestMapper {
-//    @Mapping(target = "id", source = "id")
+    @Mapping(target = "id", source = "id")
     @Mapping(target = "userId", source = "user.id")
     @Mapping(target = "leaveTypeId", source = "leaveType.id")
     @Mapping(target = "leaveStatusId", source = "leaveStatus.id")

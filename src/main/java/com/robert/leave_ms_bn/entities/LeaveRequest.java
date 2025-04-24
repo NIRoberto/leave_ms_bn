@@ -1,5 +1,6 @@
 package com.robert.leave_ms_bn.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -8,6 +9,7 @@ import org.hibernate.annotations.ColumnDefault;
 
 import java.time.Instant;
 
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Getter
 @Setter
 @Entity

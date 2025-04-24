@@ -6,6 +6,7 @@ import com.robert.leave_ms_bn.dtos.auth.UpdatePasswordRequest;
 import com.robert.leave_ms_bn.mappers.UserMapper;
 import com.robert.leave_ms_bn.repositories.RoleRepository;
 import com.robert.leave_ms_bn.repositories.UserRepository;
+import com.robert.leave_ms_bn.services.EmailService;
 import com.robert.leave_ms_bn.services.JwtService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
@@ -32,6 +33,7 @@ public class AuthController {
     private final UserMapper userMapper;
     private final ResourceTransformer resourceTransformer;
     private AuthenticationManager authenticationManager;
+    private EmailService emailService;
 
     private final JwtService jwtService;
 
@@ -46,13 +48,13 @@ public class AuthController {
 //        if (!isPassword) {
 //            return ResponseEntity.status(401).body(Map.of("message", "The email or password you entered is incorrect."));
 //        }
+
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         loginRequest.getEmail(),
                         loginRequest.getPassword()
                 )
         );
-
 
         var user  = userRepository.findByEmail(loginRequest.getEmail());
         var token = jwtService.generateToken(user);
@@ -82,8 +84,6 @@ public class AuthController {
 
     @GetMapping("/me")
     public ResponseEntity<?> getCurrentUser() {
-
-        System.out.println(SecurityContextHolder.getContext().getAuthentication().getPrincipal());
         var user = userRepository.findUserById((Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal());
         if (user == null) {
             return ResponseEntity.status(404).body(Map.of("message", "User not found"));

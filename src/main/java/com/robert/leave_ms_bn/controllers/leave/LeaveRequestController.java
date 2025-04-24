@@ -6,11 +6,15 @@ import com.robert.leave_ms_bn.dtos.notifications.create.SendNotificationDto;
 import com.robert.leave_ms_bn.entities.*;
 import com.robert.leave_ms_bn.mappers.leave.LeaveRequestMapper;
 import com.robert.leave_ms_bn.repositories.*;
+import com.robert.leave_ms_bn.services.EmailService;
 import com.robert.leave_ms_bn.services.NotificationService;
 import lombok.AllArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @RestController
@@ -25,6 +29,11 @@ public class LeaveRequestController {
     private final LeaveRequestMapper leaveRequestMapper;
     private final NotificationTypeRepository notificationTypeRepository;
     private final NotificationService notificationService;
+    private EmailService emailService;
+
+
+
+
 
 
     // ✅ Get all leave requests
@@ -34,6 +43,29 @@ public class LeaveRequestController {
                 .map(leaveRequestMapper::toEntity)
                 .toList();
     }
+
+    // ✅ Get leave requests by user ID
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<?> getLeaveRequestsByUserId(@PathVariable Long userId) {
+        // Check if the user exists
+        if (!userRepository.existsById(userId)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("User with ID " + userId + " not found.");
+        }
+
+        // Fetch leave requests
+        List<LeaveRequest> leaveRequests = leaveRequestRepository.findAllByUserId(userId);
+
+        // Optional: Return a message if there are no leave requests
+        if (leaveRequests.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NO_CONTENT)
+                    .body("No leave requests found for user with ID " + userId + ".");
+        }
+
+        // Return leave requests
+        return ResponseEntity.ok(leaveRequests);
+    }
+
 
     // ✅ Submit new leave request
     @PostMapping
@@ -99,6 +131,8 @@ public class LeaveRequestController {
         notificationService.sendNotification(
                 sendNotificationDto
         );
+
+        sendLeaveStatusEmail(leaveRequest, approvalLeaveStatus);
         return ResponseEntity.ok(leaveRequestMapper.toEntity(updated));
     }
 
@@ -113,7 +147,6 @@ public class LeaveRequestController {
     }
 
     private NotificationType getNotificationTypeByLeaveStatus(LeaveStatus leaveStatus) {
-        // Fetch notification type based on leave status
         switch (leaveStatus.getId()) {
             case 2:  // Approved
                 return notificationTypeRepository.findById(2)
@@ -145,4 +178,101 @@ public class LeaveRequestController {
         }
         return statusMessage;
     }
+
+
+
+
+
+
+
+    private void sendLeaveStatusEmail(LeaveRequest leaveRequest, LeaveStatus leaveStatus) {
+        String recipientEmail = leaveRequest.getUser().getEmail();
+        String subject = buildEmailSubject(leaveStatus);
+        String body = buildEmailBody(leaveRequest, leaveStatus);
+
+        emailService.sendSimpleEmail(recipientEmail, subject, body);
+    }
+
+    private String buildEmailSubject(LeaveStatus leaveStatus) {
+        switch (leaveStatus.getId()) {
+            case 2:
+                return "Leave Request Approved";
+            case 3:
+                return "Leave Request Rejected";
+            case 4:
+                return "Leave Request Cancelled";
+            default:
+                return "Leave Request Update";
+        }
+    }
+
+    private String buildEmailBody(LeaveRequest leaveRequest, LeaveStatus leaveStatus) {
+        String firstName = leaveRequest.getUser().getFirst_name();
+        String formattedStart =  leaveRequest.getStart_date().toString();
+        String formattedEnd =  leaveRequest.getEnd_date().toString();
+
+        String greeting = String.format("Dear %s,", firstName);
+        String body;
+
+        switch (leaveStatus.getId()) {
+            case 2:
+                body = String.format("""
+                %s
+
+                We’re pleased to inform you that your leave request from %s to %s has been approved.
+
+                Please ensure any necessary handovers are completed prior to your leave.
+
+                Best regards,
+                LeaveSys Team
+                """, greeting, formattedStart, formattedEnd);
+                break;
+
+            case 3:
+                body = String.format("""
+                %s
+
+                We regret to inform you that your leave request from %s to %s has been rejected.
+
+                For more details, please reach out to your reviewer or HR department.
+
+                Kind regards,
+                LeaveSys Team
+                """, greeting, formattedStart, formattedEnd);
+                break;
+
+            case 4:
+                body = String.format("""
+                %s
+
+                This is to confirm that your leave request from %s to %s has been cancelled.
+
+                If this was an error, please submit a new request or contact support.
+
+                Warm regards,
+                LeaveSys Team
+                """, greeting, formattedStart, formattedEnd);
+                break;
+
+            default:
+                body = String.format("""
+                %s
+
+                There has been an update to your leave request from %s to %s.
+
+                Please log in to the system for more information.
+
+                Best,
+                LeaveSys Team
+                """, greeting, formattedStart, formattedEnd);
+                break;
+        }
+
+        return body.strip();
+    }
+
+    private String formatDateTime(LocalDateTime dateTime) {
+        return dateTime.format(DateTimeFormatter.ofPattern("MMMM dd, yyyy 'at' HH:mm"));
+    }
+
 }
