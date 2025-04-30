@@ -20,3 +20,4 @@ public interface LeaveRequestMapper {
     LeaveRequestDto toEntity(  LeaveRequest leaveRequest);
     LeaveRequest fromEntity(LeaveRequestDto leaveRequest);
 }
+

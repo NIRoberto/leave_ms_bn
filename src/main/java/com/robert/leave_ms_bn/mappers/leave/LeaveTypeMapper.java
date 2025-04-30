@@ -13,7 +13,9 @@ import java.util.List;
 
 public interface LeaveTypeMapper {
 
-//    @Mapping(target = "id", source = "id")
+    @Mapping(target = "id", source = "id")
+
+
 
     LeaveTypeDto toDto(LeaveType leaveType);
     LeaveType toEntity(LeaveTypeDto leaveTypeDto);

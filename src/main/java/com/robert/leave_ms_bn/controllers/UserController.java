@@ -23,8 +23,13 @@ public class UserController {
     private final UserMapper userMapper;
 
     @GetMapping
-    public Iterable<UserDto> getUsers() {
-        return userRepository.findAll().stream().map(userMapper::toUserDto).toList();
+    public Iterable<User> getUsers() {
+        return userRepository.findAll().stream()
+//                .map(userMapper::toUserDto)
+                .toList()    //   duration in days as int from start date to end date
+                .reversed();
+
+
     }
 
     @GetMapping("{id}")

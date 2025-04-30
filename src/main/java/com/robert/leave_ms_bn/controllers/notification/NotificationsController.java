@@ -1,6 +1,7 @@
 package com.robert.leave_ms_bn.controllers.notification;
 
 import com.robert.leave_ms_bn.dtos.notifications.NotificationDto;
+import com.robert.leave_ms_bn.entities.Notification;
 import com.robert.leave_ms_bn.mappers.NotificationMapper;
 import com.robert.leave_ms_bn.repositories.NotificationRepository;
 import com.robert.leave_ms_bn.repositories.NotificationTypeRepository;
@@ -23,18 +24,18 @@ public class NotificationsController {
 
     // Get all notifications, optionally filter by user_id
     @GetMapping
-    public List<NotificationDto> getAllNotificationsByUserId(@RequestParam(required = false) Long user_id) {
-        List<NotificationDto> notifications;
+    public List<Notification> getAllNotificationsByUserId(@RequestParam(required = false) Long user_id) {
+        List<Notification> notifications;
 
         if (user_id != null) {
             // Fetch notifications for a specific user by user_id
             notifications = notificationRepository.findByUserId(user_id).stream()
-                    .map(notificationMapper::toNotificationDto)
-                    .collect(Collectors.toList());
+//                    .map(notificationMapper::toNotificationDto)
+                    .collect(Collectors.toList()).reversed();
         } else {
             // Fetch all notifications if no user_id is provided
             notifications = notificationRepository.findAll().stream()
-                    .map(notificationMapper::toNotificationDto)
+//                    .map(notificationMapper::toNotificationDto)
                     .collect(Collectors.toList());
         }
 

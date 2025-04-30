@@ -13,7 +13,7 @@ public interface NotificationMapper {
 
     @Mapping(target = "user_id" , source = "user.id")
     @Mapping(target = "is_read" , source = "isRead")
-
+    @Mapping(target = "created_at" , source="createdAt")
     NotificationDto toNotificationDto(Notification notification);
     Notification toNotification(NotificationDto notificationDto);
 

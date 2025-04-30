@@ -8,13 +8,13 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
-@Mapper(componentModel = "spring", builder = @Builder(disableBuilder = true), uses = {LeaveStatusMapper.class})
+@Mapper(componentModel = "spring", builder = @Builder(disableBuilder = true), uses = {LeaveStatusMapper.class}
+)
 
 public interface LeaveStatusMapper {
 
 
-//    @Mapping(target = "id", source = "id")
-
+    @Mapping(target = "id", source = "id")
     LeaveStatusDto toDto(LeaveStatus leaveStatusType);
     LeaveStatus fromDto(LeaveStatus leaveStatusType);
     LeaveStatus CreateLeaveStatus(LeaveStatusDto leaveStatusDto);

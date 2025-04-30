@@ -1,5 +1,5 @@
 package com.robert.leave_ms_bn.controllers.leave;
-
+import com.robert.leave_ms_bn.dtos.leave.LeaveBalanceDto;
 import com.robert.leave_ms_bn.dtos.leave.LeaveRequestDto;
 import com.robert.leave_ms_bn.dtos.leave.request.ApproveLeaveRequestDto;
 import com.robert.leave_ms_bn.dtos.notifications.create.SendNotificationDto;
@@ -7,15 +7,20 @@ import com.robert.leave_ms_bn.entities.*;
 import com.robert.leave_ms_bn.mappers.leave.LeaveRequestMapper;
 import com.robert.leave_ms_bn.repositories.*;
 import com.robert.leave_ms_bn.services.EmailService;
+import com.robert.leave_ms_bn.services.LeaveBalanceService;
 import com.robert.leave_ms_bn.services.NotificationService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @AllArgsConstructor
@@ -29,22 +34,17 @@ public class LeaveRequestController {
     private final LeaveRequestMapper leaveRequestMapper;
     private final NotificationTypeRepository notificationTypeRepository;
     private final NotificationService notificationService;
+    private final LeaveBalanceService leaveBalanceService;
     private EmailService emailService;
 
 
-
-
-
-
-    // ✅ Get all leave requests
     @GetMapping
-    public List<LeaveRequestDto> getLeaveRequests() {
+    public  List<LeaveRequest> getLeaveRequests() {
         return leaveRequestRepository.findAll().stream()
-                .map(leaveRequestMapper::toEntity)
-                .toList();
+//                .map(leaveRequestMapper::toEntity)
+                .toList().reversed();
     }
 
-    // ✅ Get leave requests by user ID
     @GetMapping("/user/{userId}")
     public ResponseEntity<?> getLeaveRequestsByUserId(@PathVariable Long userId) {
         // Check if the user exists
@@ -54,7 +54,7 @@ public class LeaveRequestController {
         }
 
         // Fetch leave requests
-        List<LeaveRequest> leaveRequests = leaveRequestRepository.findAllByUserId(userId);
+        List<LeaveRequest> leaveRequests = leaveRequestRepository.findAllByUserId(userId).reversed();
 
         // Optional: Return a message if there are no leave requests
         if (leaveRequests.isEmpty()) {
@@ -67,74 +67,118 @@ public class LeaveRequestController {
     }
 
 
-    // ✅ Submit new leave request
+
     @PostMapping
-    public ResponseEntity<LeaveRequestDto> requestLeave(@RequestBody LeaveRequestDto requestDto) {
+    public ResponseEntity<?> requestLeave(@RequestBody LeaveRequestDto requestDto) {
+        try {
+            // Map DTO to entity
+            LeaveRequest leaveRequest = leaveRequestMapper.fromEntity(requestDto);
+            leaveRequest.setStart_date(requestDto.getStartDate());
+            leaveRequest.setEnd_date(requestDto.getEndDate());
 
-        LeaveRequest leaveRequest = leaveRequestMapper.fromEntity(requestDto);
-        leaveRequest.setStart_date(requestDto.getStartDate());
-        leaveRequest.setEnd_date(requestDto.getEndDate());
+            // Calculate duration (inclusive of both dates)
+            long durationDays = ChronoUnit.DAYS.between(requestDto.getStartDate(), requestDto.getEndDate()) + 1;
+            leaveRequest.setDuration((int) durationDays);
 
-        long daysBetween = java.time.temporal.ChronoUnit.DAYS.between(
-                requestDto.getStartDate(), requestDto.getEndDate()) + 1;
-        leaveRequest.setDuration((int) daysBetween);
+            // Fetch default leave status
+            LeaveStatus defaultStatus = leaveStatusRepository.findAll()
+                    .stream()
+                    .findFirst()
+                    .orElseThrow(() -> new RuntimeException("No default leave status found."));
 
-        LeaveStatus defaultStatus = leaveStatusRepository.findAll()
-                .stream()
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("Default leave status not found"));
+            // Fetch default reviewer
+            User defaultReviewer = userRepository.findAll()
+                    .stream()
+                    .findFirst()
+                    .orElseThrow(() -> new RuntimeException("No default reviewer found."));
 
-         User defaultReviewer = userRepository.findAll()
-                .stream()
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("Default leave status not found"));
-         LeaveType requestLeaveType = leaveTypeRepository.findById(requestDto.getLeaveTypeId()).orElseThrow();
+            // Get leave type
+            LeaveType leaveType = leaveTypeRepository.findById(requestDto.getLeaveTypeId())
+                    .orElseThrow(() -> new RuntimeException("Leave type not found with ID: " + requestDto.getLeaveTypeId()));
 
-        User  requestUser  = userRepository.findById(requestDto.getUserId()).orElseThrow();
+            // Get requesting user
+            User user = userRepository.findById(requestDto.getUserId())
+                    .orElseThrow(() -> new RuntimeException("User not found with ID: " + requestDto.getUserId()));
 
-        leaveRequest.setUser(requestUser);
-        leaveRequest.setLeaveType(requestLeaveType);
-        leaveRequest.setReviewer_by(defaultReviewer);
-        leaveRequest.setLeaveStatus(defaultStatus);
+            // Set relationships
+            leaveRequest.setUser(user);
+            leaveRequest.setLeaveType(leaveType);
+            leaveRequest.setReviewer_by(defaultReviewer);
+            leaveRequest.setLeaveStatus(defaultStatus);
 
-        LeaveRequest saved = leaveRequestRepository.save(leaveRequest);
-        return ResponseEntity.ok(leaveRequestMapper.toEntity(saved));
+            // Save leave request
+            LeaveRequest savedLeaveRequest = leaveRequestRepository.save(leaveRequest);
+
+            // Return response
+            return ResponseEntity.ok(Map.of(
+                    "message", "Leave request submitted successfully.",
+                    "leaveRequestId", savedLeaveRequest.getId()
+            ));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", e.getMessage()));
+        }
     }
 
-    // ✅ Approve/Reject/Cancel leave request
     @PutMapping("/status")
-    public ResponseEntity<LeaveRequestDto> updateLeaveStatus(@RequestBody ApproveLeaveRequestDto approveDto) {
-        LeaveRequest leaveRequest = leaveRequestRepository.findById(approveDto.getRequestId())
-                .orElseThrow(() -> new RuntimeException("Leave request not found"));
+    public ResponseEntity<?> updateLeaveStatus(@RequestBody ApproveLeaveRequestDto approveDto) {
+        try {
+            LeaveRequest leaveRequest = leaveRequestRepository.findById(approveDto.getRequestId())
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.NOT_FOUND, "Leave request with ID " + approveDto.getRequestId() + " not found"));
+            User approvalRequester = userRepository.findById(leaveRequest.getUser().getId())
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.NOT_FOUND, "Requester user not found"));
+            User approvalReviewer = userRepository.findById(approveDto.getReviewerById())
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.NOT_FOUND, "Reviewer user with ID " + approveDto.getReviewerById() + " not found"));
+            LeaveStatus approvalLeaveStatus = leaveStatusRepository.findById(approveDto.getLeaveStatusId())
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.NOT_FOUND, "Leave status with ID " + approveDto.getLeaveStatusId() + " not found"));
+            leaveRequest.setReviewer_by(approvalReviewer);
+            leaveRequest.setLeaveStatus(approvalLeaveStatus);
 
-        User  approvalRequester  =  userRepository.findById(approveDto.getRequestId()).orElseThrow();
-        User  approvalReview =  userRepository.findById(approveDto.getReviewerById()).orElseThrow();
-        LeaveStatus  approvalLeaveStatus = leaveStatusRepository.findById(approveDto.getLeaveStatusId()).orElseThrow();
-
-        leaveRequest.setUser(approvalRequester);
-        leaveRequest.setLeaveStatus(approvalLeaveStatus);
-        leaveRequest.setReviewer_by(approvalReview);
+            try {
+                LeaveBalanceDto updatedBalance = leaveBalanceService.createOrUpdateLeaveBalance(leaveRequest.getUser().getId(), leaveRequest.getLeaveType().getId() , leaveRequest.getDuration());
 
 
-        LeaveRequest updated = leaveRequestRepository.save(leaveRequest);
-        SendNotificationDto sendNotificationDto = new SendNotificationDto();
+            }
+            catch (Exception e) {
+                System.out.println(e.getMessage());
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(Map.of("error", "Failed to update leave balance."));
+            }
 
-        sendNotificationDto.setUser_id(approvalRequester.getId());
-        sendNotificationDto.set_read(false);
-        sendNotificationDto.setNotification_type_id(approvalLeaveStatus.getId());
-        sendNotificationDto.setCreated_at(updated.getCreated_at());
-        String message = generateLeaveStatusMessage(leaveRequest, approvalLeaveStatus);
-        sendNotificationDto.setMessage(
-             message
-        );
 
-        notificationService.sendNotification(
-                sendNotificationDto
-        );
+            LeaveRequest updatedRequest = leaveRequestRepository.save(leaveRequest);
 
-        sendLeaveStatusEmail(leaveRequest, approvalLeaveStatus);
-        return ResponseEntity.ok(leaveRequestMapper.toEntity(updated));
+            try {
+                SendNotificationDto notificationDto = new SendNotificationDto();
+                notificationDto.setUser_id(approvalRequester.getId());
+                notificationDto.set_read(false);
+                notificationDto.setNotification_type_id(approvalLeaveStatus.getId());
+                notificationDto.setCreated_at(Instant.now());
+                notificationDto.setMessage(generateLeaveStatusMessage(updatedRequest, approvalLeaveStatus));
+                notificationService.sendNotification(notificationDto);
+            } catch (Exception e) {
+                System.out.println(e.getMessage());
+            }
+            try {
+                sendLeaveStatusEmail(updatedRequest, approvalLeaveStatus);
+            } catch (Exception e) {
+            }
+            return ResponseEntity.ok(leaveRequestMapper.toEntity(updatedRequest));
+
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(
+                    HttpStatus.BAD_REQUEST
+            ).body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occurred.");
+        }
     }
+
 
     // ✅ Delete a leave request
     @DeleteMapping("/{id}")
@@ -208,63 +252,72 @@ public class LeaveRequestController {
 
     private String buildEmailBody(LeaveRequest leaveRequest, LeaveStatus leaveStatus) {
         String firstName = leaveRequest.getUser().getFirst_name();
-        String formattedStart =  leaveRequest.getStart_date().toString();
-        String formattedEnd =  leaveRequest.getEnd_date().toString();
+        String formattedStart = leaveRequest.getStart_date().toString();
+        String formattedEnd = leaveRequest.getEnd_date().toString();
+        String leaveType = leaveRequest.getLeaveType().getName();
+        int duration = leaveRequest.getDuration();
+        String reviewerName = leaveRequest.getReviewer_by() != null
+                ? leaveRequest.getReviewer_by().getFirst_name() + " " + leaveRequest.getReviewer_by().getLast_name()
+                : "N/A";
 
         String greeting = String.format("Dear %s,", firstName);
         String body;
 
         switch (leaveStatus.getId()) {
-            case 2:
+            case 2: // Approved
                 body = String.format("""
-                %s
+            %s
 
-                We’re pleased to inform you that your leave request from %s to %s has been approved.
+            We’re pleased to inform you that your leave request for %s (%d days) from %s to %s has been approved.
 
-                Please ensure any necessary handovers are completed prior to your leave.
+            Reviewer: %s
 
-                Best regards,
-                LeaveSys Team
-                """, greeting, formattedStart, formattedEnd);
+            Please ensure any necessary handovers are completed prior to your leave.
+
+            Best regards,
+            LeaveSys Team
+            """, greeting, leaveType, duration, formattedStart, formattedEnd, reviewerName);
                 break;
 
-            case 3:
+            case 3: // Rejected
                 body = String.format("""
-                %s
+            %s
 
-                We regret to inform you that your leave request from %s to %s has been rejected.
+            We regret to inform you that your leave request for %s (%d days) from %s to %s has been rejected.
 
-                For more details, please reach out to your reviewer or HR department.
+            Reviewer: %s
 
-                Kind regards,
-                LeaveSys Team
-                """, greeting, formattedStart, formattedEnd);
+            For more details, please reach out to your reviewer or HR department.
+
+            Kind regards,
+            LeaveSys Team
+            """, greeting, leaveType, duration, formattedStart, formattedEnd, reviewerName);
                 break;
 
-            case 4:
+            case 4: // Cancelled
                 body = String.format("""
-                %s
+            %s
 
-                This is to confirm that your leave request from %s to %s has been cancelled.
+            This is to confirm that your leave request for %s (%d days) from %s to %s has been cancelled.
 
-                If this was an error, please submit a new request or contact support.
+            If this was an error, please submit a new request or contact support.
 
-                Warm regards,
-                LeaveSys Team
-                """, greeting, formattedStart, formattedEnd);
+            Warm regards,
+            LeaveSys Team
+            """, greeting, leaveType, duration, formattedStart, formattedEnd);
                 break;
 
-            default:
+            default: // Other updates
                 body = String.format("""
-                %s
+            %s
 
-                There has been an update to your leave request from %s to %s.
+            There has been an update to your leave request for %s (%d days) from %s to %s.
 
-                Please log in to the system for more information.
+            Please log in to the system for more information.
 
-                Best,
-                LeaveSys Team
-                """, greeting, formattedStart, formattedEnd);
+            Best regards,
+            LeaveSys Team
+            """, greeting, leaveType, duration, formattedStart, formattedEnd);
                 break;
         }
 

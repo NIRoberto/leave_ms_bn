@@ -32,12 +32,9 @@ public class JwtService {
         return generateAccessToken(user);
     }
 
-
     public String generateRefreshToken(User user) {
         return generateAccessToken(user);
     }
-
-
 
     private String generateAccessToken(User user) {
         return Jwts.builder()

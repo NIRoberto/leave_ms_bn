@@ -55,14 +55,16 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**", "/", "/roles/**").permitAll()
                         .requestMatchers(
-                                "/leave/types/**",
-                                "/notification/types/**",
-                                "/leave/status/**",
-                                "/leave/request/**",
                                 "/users/**"
                         ).hasAnyRole("ADMIN", "MANAGER")
-                        .requestMatchers(HttpMethod.GET, "/leave/request/user/**").hasAnyRole("ADMIN", "MANAGER", "STAFF")
+                        .requestMatchers(HttpMethod.GET, "/leave/request/user/**",
+                                "/leave/types/**",
+                                "/leave/status/**",
+                                "/notification/types/**"
+                                ).hasAnyRole("ADMIN", "MANAGER", "STAFF")
                         .requestMatchers(HttpMethod.GET, "/users/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/leave/request/**").hasAnyRole("ADMIN","MANAGER","STAFF")
+                        .requestMatchers(HttpMethod.PATCH, "/users/**").hasAnyRole("ADMIN")
                         .requestMatchers(
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
@@ -71,7 +73,7 @@ public class SecurityConfig {
                                 "/swagger-resources/**",
                                 "/webjars/**"
                         ).permitAll()
-                        .anyRequest().authenticated()
+                        .anyRequest().permitAll()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 

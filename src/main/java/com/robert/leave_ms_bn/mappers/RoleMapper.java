@@ -12,7 +12,7 @@ import org.mapstruct.Mapping;
 
 public interface RoleMapper {
 
-//    @Mapping(target = "id", source = "id")
+    @Mapping(target = "id", source = "id")
     UpdateRoleRequest.RoleDto toRole(Role role);
 
     Role  toRoleEntity(CreateRoleRequest roleDto);

@@ -44,7 +44,7 @@ public class Notification {
     @Column(name = "is_read", nullable = false)
     private Boolean isRead = false;
 
-    @NotNull
-    @Column(name = "created_at", nullable = false)
+//    @NotNull
+    @Column(name = "created_at", nullable = true)
     private Instant createdAt;
 }
